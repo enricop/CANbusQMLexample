@@ -19,7 +19,8 @@ ApplicationWindow {
         }
     }
 
-    header: Row {
+    header: GroupBox {
+        title: "Send CAN frame"
         GridLayout{
             columns: 3
             Label {
@@ -41,6 +42,7 @@ ApplicationWindow {
             }
             Button {
                 text: "Send"
+                onClicked: channel.sendFrame(frameid.text, framepayload.text)
             }
         }
     }
@@ -50,10 +52,10 @@ ApplicationWindow {
 
         ListView {
             id: mainlist
-            focus: true
-            clip: true
+            //focus: true
+            //clip: true
 
-            property var columnWidths: ({"timestamp": 100, "canid": 50})
+            property var columnWidths: ({"timestamp": 100, "flags": 50})
 
 //            model: LogListModel {
             //        id: syslogmodel
@@ -73,9 +75,9 @@ ApplicationWindow {
                 }
                 Label {
                     //anchors.centerIn: parent
-                    text: "CAN-ID"
+                    text: "Flags"
                     //font.pixelSize: 20
-                    width: mainlist.columnWidths.canid
+                    width: mainlist.columnWidths.flags
                 }
                 Label {
                     //anchors.centerIn: parent
@@ -98,8 +100,8 @@ ApplicationWindow {
                         Layout.fillHeight: true
                         Layout.fillWidth: true
                         Layout.preferredHeight: implicitHeight
-                        Layout.preferredWidth: mainlist.columnWidths.canid
-                        text: canid
+                        Layout.preferredWidth: mainlist.columnWidths.flags
+                        text: flags
                     }
                     Label {
                         Layout.fillHeight: true
