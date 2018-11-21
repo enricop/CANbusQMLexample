@@ -2,8 +2,7 @@
 #define FRAMELISTMODEL_H
 
 #include <QAbstractListModel>
-
-class FrameItemList;
+#include "frameitemlist.h"
 
 class FrameListModel : public QAbstractListModel
 {

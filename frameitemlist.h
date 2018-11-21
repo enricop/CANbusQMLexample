@@ -1,4 +1,4 @@
-#ifndef LOGITEMLIST_H
+#ifndef FRAMEITEMLIST_H
 #define FRAMEITEMLIST_H
 
 #include <QCanBusFrame>

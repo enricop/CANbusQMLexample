@@ -2,82 +2,87 @@
 
 #include <QCanBus>
 #include <QVariant>
+#include <QDebug>
 
-CanBusChannel::CanBusChannel(QObject *parent) : QObject(parent)
+CANbusChannel::CANbusChannel(FrameItemList *framelist, QObject *parent) :
+    QObject(parent),
+    m_canDevice(nullptr),
+    m_framelist(framelist)
+{
+
+}
+
+CANbusChannel::~CANbusChannel()
+{
+    delete m_canDevice;
+}
+
+void CANbusChannel::connectDevice()
 {
     QString errorString;
-    m_canDevice = QCanBus::instance()->createDevice(QStringLiteral("socketcan"), QStringLiteral("can0"), &errorString);
+    m_canDevice = QCanBus::instance()->createDevice(QStringLiteral("socketcan"), QStringLiteral("vcan0"), &errorString);
     if (!m_canDevice) {
-        //m_status->setText(tr("Error creating device '%1', reason: '%2'")
-        //                  .arg(p.pluginName).arg(errorString));
+        setconninfo(tr("Error creating device '%1', reason: '%2'").arg("vcan0").arg(errorString));
         return;
     }
 
-    /*
-    m_numberFramesWritten = 0;
-
-    connect(m_canDevice, &QCanBusDevice::errorOccurred, this, &MainWindow::processErrors);
-    connect(m_canDevice, &QCanBusDevice::framesReceived, this, &MainWindow::processReceivedFrames);
-    connect(m_canDevice, &QCanBusDevice::framesWritten, this, &MainWindow::processFramesWritten);
-    */
+    connect(m_canDevice, &QCanBusDevice::errorOccurred, this, &CANbusChannel::processErrors);
+    connect(m_canDevice, &QCanBusDevice::framesReceived, this, &CANbusChannel::processReceivedFrames);
+    connect(m_canDevice, &QCanBusDevice::framesWritten, this, &CANbusChannel::processFramesWritten);
 
     m_canDevice->setConfigurationParameter(QCanBusDevice::ReceiveOwnKey, QVariant::fromValue(true));
 
-    /*
     if (!m_canDevice->connectDevice()) {
-        m_status->setText(tr("Connection error: %1").arg(m_canDevice->errorString()));
+        setconninfo(tr("Connection error: %1").arg(m_canDevice->errorString()));
 
         delete m_canDevice;
         m_canDevice = nullptr;
-    } else {
-        m_ui->actionConnect->setEnabled(false);
-        m_ui->actionDisconnect->setEnabled(true);
-
-        m_ui->sendFrameBox->setEnabled(true);
-
-        QVariant bitRate = m_canDevice->configurationParameter(QCanBusDevice::BitRateKey);
-        if (bitRate.isValid()) {
-            m_status->setText(tr("Plugin: %1, connected to %2 at %3 kBit/s")
-                    .arg(p.pluginName).arg(p.deviceInterfaceName)
-                    .arg(bitRate.toInt() / 1000));
-        } else {
-            m_status->setText(tr("Plugin: %1, connected to %2")
-                    .arg(p.pluginName).arg(p.deviceInterfaceName));
-        }
-    }*/
+    }
 }
 
-CanBusChannel::~CanBusChannel()
+void CANbusChannel::disconnectDevice()
 {
-
+    m_canDevice->disconnectDevice();
 }
 
-void CanBusChannel::processReceivedFrames()
-{
-
-}
-
-void CanBusChannel::processFramesWritten(qint64)
-{
-
-}
-
-void CanBusChannel::sendFrame(const QString canid, QString message) const
+void CANbusChannel::sendFrame(const QString canid, QString message) const
 {
     const uint frameId = canid.toUInt(nullptr, 16);
     const QByteArray payload = QByteArray::fromHex(message.remove(QLatin1Char(' ')).toLatin1());
 
     QCanBusFrame frame = QCanBusFrame(frameId, payload);
 
-    m_canDevice->writeFrame(frame);
+    if (!m_canDevice->writeFrame(frame))
+        qDebug() << "m_canDevice->writeFrame failed";
 }
 
-void CanBusChannel::connectDevice()
+void CANbusChannel::processErrors(QCanBusDevice::CanBusError error)
 {
-
+    switch (error) {
+    case QCanBusDevice::ReadError:
+    case QCanBusDevice::WriteError:
+    case QCanBusDevice::ConnectionError:
+    case QCanBusDevice::ConfigurationError:
+    case QCanBusDevice::UnknownError:
+        setconninfo(m_canDevice->errorString());
+        break;
+    default:
+        break;
+    }
 }
 
-void CanBusChannel::disconnectDevice()
+void CANbusChannel::processReceivedFrames()
 {
+    if (!m_canDevice)
+        return;
 
+    while (m_canDevice->framesAvailable()) {
+        const QCanBusFrame frame = m_canDevice->readFrame();
+
+        m_framelist->appendItem(frame);
+    }
+}
+
+void CANbusChannel::processFramesWritten(qint64 count) {
+    setconninfo(tr("%1 frames written").arg(count));
 }

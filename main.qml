@@ -2,7 +2,7 @@ import QtQuick 2.11
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.3
 
-//import CANbusExample 1.0
+import CANbusExample 1.0
 
 ApplicationWindow {
     visible: true
@@ -13,6 +13,11 @@ ApplicationWindow {
     menuBar: MenuBar {
         Menu {
             title: qsTr("&Connect")
+            Action {
+                text: qsTr("&SocketCAN")
+                //icon.name: "edit-copy"
+                onTriggered: channel.connectDevice()
+            }
         }
         Menu {
             title: qsTr("&Disconnect")
@@ -35,10 +40,12 @@ ApplicationWindow {
             TextField {
                 id: frameid
                 placeholderText: "123"
+                //validator:
             }
             TextField {
                 id: framepayload
                 placeholderText: "12 15 AA EE"
+                //validator:
             }
             Button {
                 text: "Send"
@@ -57,10 +64,10 @@ ApplicationWindow {
 
             property var columnWidths: ({"timestamp": 100, "flags": 50})
 
-//            model: LogListModel {
-            //        id: syslogmodel
-            //        list: logItemList
-            //    }
+            model: FrameListModel {
+                id: canmodel
+                list: framelist
+            }
 
             header: Row {
                 id: banner
@@ -68,6 +75,7 @@ ApplicationWindow {
                 //height: 50
                 //gradient: clubcolors
                 //border {color: "#9EDDF2"; width: 2}
+                padding: 15
                 Label {
                     text: "Timestamp"
                     //font.pixelSize: 20
@@ -123,9 +131,10 @@ ApplicationWindow {
         }
     }
 
-    footer: Row {
+    footer: GroupBox {
+        title: "Info Messages"
         Label {
-            text: "ciao"
+            text: channel.connectioninfo
         }
     }
 }

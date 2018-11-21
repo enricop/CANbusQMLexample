@@ -1,28 +1,46 @@
-#ifndef CANBUSCHANNEL_H
-#define CANBUSCHANNEL_H
+#ifndef CANBUSCONNECTION_H
+#define CANBUSCONNECTION_H
 
 #include <QObject>
 #include <QCanBusDevice>
+#include "frameitemlist.h"
 
-class CanBusChannel : public QObject
+class CANbusChannel : public QObject
 {
     Q_OBJECT
-public:
-    explicit CanBusChannel(QObject *parent = nullptr);
-    ~CanBusChannel();
 
-private slots:
-    void processReceivedFrames();
-    void processFramesWritten(qint64);
-    void sendFrame(const QString canid, QString message) const;
+    Q_PROPERTY(QString connectioninfo READ getconninfo WRITE setconninfo NOTIFY coninfoChanged)
+
+public:
+    explicit CANbusChannel(FrameItemList *framelist, QObject *parent = nullptr);
+    ~CANbusChannel();
+
+    QString getconninfo() {
+        return m_connectionInfo;
+    }
+    void setconninfo(QString info) {
+        if (info == m_connectionInfo)
+            return;
+        m_connectionInfo = info;
+        emit coninfoChanged();
+    }
+
+    Q_INVOKABLE void sendFrame(const QString canid, QString message) const;
+
+signals:
+    void coninfoChanged();
+
+public slots:
     void connectDevice();
     void disconnectDevice();
 
-protected:
-    //void closeEvent(QCloseEvent *event) override;
-
+    void processReceivedFrames();
+    void processErrors(QCanBusDevice::CanBusError error);
+    void processFramesWritten(qint64 count);
 private:
     QCanBusDevice *m_canDevice;
+    QString m_connectionInfo;
+    FrameItemList *m_framelist;
 };
 
-#endif // CANBUSCHANNEL_H
+#endif // CANBUSCONNECTION_H
